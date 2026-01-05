@@ -1,0 +1,9 @@
+git_service:
+  base_url: "https://example.git.service"
+  api_token: "YOUR_TOKEN_HERE"
+
+
+
+
+model:
+  runtime: "stub"  # in private setup: "raspberry-pi"
