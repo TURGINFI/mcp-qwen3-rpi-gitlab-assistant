@@ -1,1 +1,12 @@
-a
+# Core dependencies for the demo
+
+# HTTP client for Git service / MCP demo calls
+requests>=2.31.0
+
+# Anthropic Model Context Protocol (MCP) Python client
+# Used by mcp_client.py and qwen_gitlab_demo.py
+mcp>=0.1.0
+
+# Optional: YAML config loader
+# Uncomment if you start reading config/config.yaml in code
+# PyYAML>=6.0.1
