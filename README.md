@@ -49,3 +49,30 @@ AI Model Interface   Git Service Integration
    ↓
 llama.cpp HTTP server → Qwen3-0_6b-q4_k_m.gguf (local model file)
 GitLab REST API (via gitlab_mcp_server.py)
+
+
+
+## Model Weights (not included in this repo)
+
+This project was tested with the **Qwen3-0.6B** model.
+The base weights were obtained from the official Qwen repository on Hugging Face (`Qwen/Qwen3-0.6B`), and then converted/downloaded as a quantized GGUF file (e.g. `qwen3-0_6b-q4_k_m.gguf`) for use with `llama.cpp`.
+
+Since the model has not been fine-tuned for this specific project, its performance in user-facing interactions is still quite limited.
+
+Model weights are **not** included in this repository and must be
+downloaded separately from the official sources, following the Qwen license.
+
+To run the private Raspberry Pi setup, you need to:
+
+1. Obtain the Qwen3-0.6B weights from the official Qwen distribution
+   channels (e.g. Hugging Face or other providers), following their license.
+2. Convert or download a quantized GGUF file, such as  
+   `qwen3-0_6b-q4_k_m.gguf`.
+3. Place the file under a local `models/` directory (not committed to Git),
+   and point `llama.cpp` to it, for example:
+
+   ```bash
+   ./bin/llama-server \
+     -m ../models/qwen3-0_6b-q4_k_m.gguf \
+     -c 1024 \
+     --port 9000
