@@ -1,21 +1,30 @@
-name Minimal CI
+name: Minimal CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   run-demo:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checout@v3
-      - uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      
-      - run: pip install --upgrade pip
-      - run: |
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - run: python -m src.main
+
+      - name: Run demo
+        run: python -m src.main
