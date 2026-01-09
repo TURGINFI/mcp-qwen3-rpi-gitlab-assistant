@@ -78,3 +78,8 @@ Since the model has not been fine-tuned for this specific project, its performan
 
 Model weights are **not** included in this repository and must be
 downloaded separately from the official sources, following the Qwen license.
+
+
+
+This project includes a minimal CI pipeline (GitHub Actions) to ensure
+the core demo runs successfully in a clean environment.
