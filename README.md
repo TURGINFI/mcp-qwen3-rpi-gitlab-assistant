@@ -33,8 +33,17 @@ The goal is to explore how small organisations can use LLMs **inside their own n
   - Real integrations use environment variables (`GITLAB_TOKEN`, `GITLAB_BASE_URL`) on the Raspberry Pi.
   - All inference happens on-device; prompts and code never leave the local network.
 
----
+## Model Weights (not included in this repo)
+- This project was tested with the **Qwen3-0.6B** model.
+- The base weights were obtained from the official Qwen repository on Hugging Face (`Qwen/Qwen3-0.6B`), and then converted/downloaded as a quantized GGUF file (e.g. `qwen3-0_6b-q4_k_m.gguf`) for use with `llama.cpp`.
+- Since the model has not been fine-tuned for this specific project, its performance in user-facing interactions is still quite limited.
+- Model weights are **not** included in this repository and must be downloaded separately from the official sources, following the Qwen license.
+- This project includes a minimal CI pipeline (GitHub Actions) to ensure the core demo runs successfully in a clean environment.
 
+## Notes on Tooling
+- Part of the documentation and scaffolding code was written with the assistance of AI tools (e.g. ChatGPT); all code and design were reviewed and tested by me.
+
+---
 ## High-Level Architecture
 
 ```text
@@ -68,18 +77,3 @@ To run the private Raspberry Pi setup, you need to:
 
 
 
-
-## Model Weights (not included in this repo)
-
-This project was tested with the **Qwen3-0.6B** model.
-The base weights were obtained from the official Qwen repository on Hugging Face (`Qwen/Qwen3-0.6B`), and then converted/downloaded as a quantized GGUF file (e.g. `qwen3-0_6b-q4_k_m.gguf`) for use with `llama.cpp`.
-
-Since the model has not been fine-tuned for this specific project, its performance in user-facing interactions is still quite limited.
-
-Model weights are **not** included in this repository and must be
-downloaded separately from the official sources, following the Qwen license.
-
-
-
-This project includes a minimal CI pipeline (GitHub Actions) to ensure
-the core demo runs successfully in a clean environment.
