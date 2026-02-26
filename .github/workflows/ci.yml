@@ -2,29 +2,46 @@ name: Minimal CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  run-demo:
+  ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run demo
-        run: python -m src.mcp.main
+      - name: Compile Python files
+        run: |
+          python -m compileall -q src
+
+      - name: Import smoke test
+        run: |
+          python - << 'PY'
+          import importlib
+          modules = [
+              "src.web.server",
+              "src.ai_model.qwen_client",
+              "src.integrations.gitlab_client",
+              "src.mcp.mcp_client",
+          ]
+          for m in modules:
+              importlib.import_module(m)
+              print("OK import:", m)
+          print("Smoke test passed.")
+          PY
