@@ -214,3 +214,14 @@ gitlab_mcp_server.py
 # Local LLM runtimes and models (Raspberry Pi only, do not commit)
 llama.cpp/
 models/
+
+# This folder contains the virtual environment. It is recommended to create one.
+mcp_venv/
+__pycache__/
+*.pyc
+
+models/
+*.gguf
+
+.env
+*.log

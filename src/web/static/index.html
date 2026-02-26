@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Internal Qwen + GitLab Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/script.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Internal Qwen + GitLab Assistant (Demo)</h1>
+      <p>
+        Running on Raspberry Pi with local Qwen3-0.6B and GitLab REST API.
+        This is a small internal helper, not a big cloud chatbot.
+      </p>
+      <div class="badges">
+        <span class="badge">
+          <span class="badge-dot"></span>
+          RPi 5 · local inference
+        </span>
+        <span class="badge">Qwen3-0.6B · GGUF</span>
+        <span class="badge">MCP-style tools · GitLab</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="chat-card">
+        <div class="chat-header">
+          <div class="chat-header-left">Chat console</div>
+          <div class="chat-header-right" id="status-text">
+            Connected to backend (expected)
+          </div>
+        </div>
+
+        <div id="chat-log" class="chat-log"></div>
+
+        <div class="chat-footer">
+          <form id="chat-form">
+            <input
+              id="user-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Ask about your GitLab projects, or just chat with Qwen..."
+            />
+            <button id="send-btn" type="submit">
+              Send
+              <span>↗</span>
+            </button>
+          </form>
+          <div class="helper-text">
+            Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for line break.  
+            All GitLab requests go through your Raspberry Pi backend (no tokens in browser).
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Demo project – local Qwen3-0.6B + GitLab integration (for study only).
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
