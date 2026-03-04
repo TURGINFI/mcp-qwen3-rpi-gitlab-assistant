@@ -1,5 +1,5 @@
 from src.ai_model.model_stub import LightweightLLM
-from src.integrations.git_service_mock import MockGitService
+from src.integrations.gitlab_client import MockGitService
 from src.mcp.mcp_client import MCPOrchestrator
 
 

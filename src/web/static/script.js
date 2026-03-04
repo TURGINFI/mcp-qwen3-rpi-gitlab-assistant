@@ -6,7 +6,12 @@ const input = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
 const statusText = document.getElementById("status-text");
 
-// helper: create one chat bubble
+// Store conversation history
+let chatHistory = [];
+// Limit history to prevent overwhelming the small 0.6B model
+const MAX_HISTORY_LENGTH = 10; 
+
+// Helper: create one chat bubble
 function appendMessage(role, text) {
   const wrapper = document.createElement("div");
   wrapper.className = "message " + role;
@@ -28,11 +33,11 @@ function appendMessage(role, text) {
   content.appendChild(bubble);
 
   if (role === "user") {
-    // user bubble on the right side
+    // User bubble on the right side
     wrapper.appendChild(content);
     wrapper.appendChild(avatar);
   } else {
-    // assistant bubble on the left side
+    // Assistant bubble on the left side
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
   }
@@ -41,7 +46,7 @@ function appendMessage(role, text) {
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-// helper: show "thinking..." message, return element id
+// Helper: show "thinking..." message, return element id
 function appendThinking() {
   const id = "assistant-thinking";
   const existing = document.getElementById(id);
@@ -80,7 +85,7 @@ function removeThinking(id) {
   if (el) el.remove();
 }
 
-// handle form submit
+// Handle form submit
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = input.value.trim();
@@ -96,9 +101,11 @@ form.addEventListener("submit", async (event) => {
     const resp = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // here we send message text to backend
-      body: JSON.stringify({ message: text })
-      // if your backend uses other key, just change this
+      // Send the current message AND the conversation history
+      body: JSON.stringify({ 
+        message: text,
+        history: chatHistory
+      })
     });
 
     if (!resp.ok) {
@@ -107,7 +114,7 @@ form.addEventListener("submit", async (event) => {
 
     const data = await resp.json();
 
-    // try find reply field, if not exist, print raw json
+    // Try to find reply field, if not exist, print raw json
     const reply =
       data.reply ||
       data.response ||
@@ -117,6 +124,16 @@ form.addEventListener("submit", async (event) => {
 
     removeThinking(thinkingId);
     appendMessage("assistant", reply);
+
+    // Update history array with the successful exchange
+    chatHistory.push({ role: "user", content: text });
+    chatHistory.push({ role: "assistant", content: reply });
+
+    // Enforce history limit
+    if (chatHistory.length > MAX_HISTORY_LENGTH * 2) {
+      chatHistory = chatHistory.slice(-(MAX_HISTORY_LENGTH * 2));
+    }
+
   } catch (err) {
     removeThinking(thinkingId);
     appendMessage(
@@ -138,7 +155,7 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-// initial welcome message so page not empty
+// Initial welcome message so page is not empty
 appendMessage(
   "assistant",
   "Hi, I am your small internal Qwen + GitLab assistant.\n" +

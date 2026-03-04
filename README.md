@@ -167,12 +167,8 @@ pip install -r requirements.txt
 
 4. Build `llama.cpp` on the Pi and start the HTTP server, for example:
 
-   ```bash
-   cd ~/llama.cpp/build
-   ./bin/llama-server \
-     -m ~/models/qwen3-0_6b-q4_k_m.gguf \
-     -c 1024 \
-     --port 9000
+   ```bash (sometimes it is better to use absolute path to start the HTTP server)
+   ~/llama.cpp/build/bin/llama-server -m ~/llama.cpp/models/qwen3-0_6b-q4_k_m.gguf -c 1024 --port 9000 --host 0.0.0.0
    ```
 
    Keep this process running in its own terminal window.
@@ -203,6 +199,11 @@ echo 'source ~/.secrets' >> ~/.bashrc
 # Reload current shell session
 source ~/.bashrc
 ```
+**Note that once the token is modified based on the change of the token's scope, these command must be executed"
+source ~/.secrets
+pkill -f "src.web.server" 
+python -m src.web.server
+
 
 **Important security note**
 
