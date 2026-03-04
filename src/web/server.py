@@ -142,6 +142,8 @@ def chat(req: ChatRequest) -> ChatResponse:
         or "project" in text_lower
         or "projects" in text_lower
         or "项目" in user_msg
+        or "merge" in text_lower
+        or "commit" in text_lower
     )
 
     # Prepare the array of messages we will send to Qwen
@@ -163,7 +165,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         used_gitlab = True
 
     else:
-        # ---- branch 2: normal small-talk Qwen chat ----
+        
         system_prompt = (
             "You are a small local Qwen3-0.6B model running on a Raspberry Pi. "
             "Answer in a clear and short way. Be helpful and polite."
