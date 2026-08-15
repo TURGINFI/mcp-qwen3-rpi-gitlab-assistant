@@ -104,7 +104,7 @@ It uses stubbed model logic and a mock Git service – **no tokens and no real r
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<your-name>/MCP-QWEN3-RPi-GitLab-Assistant.git
+git clone https://github.com/wenhangong/MCP-QWEN3-RPi-GitLab-Assistant.git
 cd MCP-QWEN3-RPi-GitLab-Assistant
 
 # 2. Create and activate virtual environment
@@ -139,7 +139,7 @@ This is the **real** internal setup used on my Raspberry Pi 5.
 On the Raspberry Pi:
 
 ```bash
-git clone https://github.com/<your-name>/MCP-QWEN3-RPi-GitLab-Assistant.git
+git clone https://github.com/wenhangong/MCP-QWEN3-RPi-GitLab-Assistant.git
 cd MCP-QWEN3-RPi-GitLab-Assistant
 
 python -m venv mcp_venv
