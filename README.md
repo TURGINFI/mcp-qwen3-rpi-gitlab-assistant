@@ -1,299 +1,214 @@
-# MCP-Style Qwen3 GitLab Assistant on Raspberry Pi
+# Local Qwen3 GitLab Assistant on Raspberry Pi
 
-This project is a proof-of-concept **on-premise AI assistant** that runs a quantized Qwen3-0.6B model on a **Raspberry Pi 5** using `llama.cpp`, and connects it to GitLab through an **MCP-style architecture**.
+A privacy-focused AI assistant prototype that runs Qwen3-0.6B locally on a Raspberry Pi 5 with `llama.cpp` and integrates with GitLab through a small MCP-style orchestration architecture.
 
-The goal is to explore how small organisations can use LLMs **inside their own network** without sending source code or NDA-protected data to external cloud services.
+This repository uses an **MCP-style / MCP-inspired architecture**: it separates model access, GitLab integration, and request orchestration. It is not a full implementation of the official Model Context Protocol specification.
 
-> In my original setup, I deployed and ran Qwen3-0.6B on a Raspberry Pi 5 using `llama.cpp` (inference only, no training).  
-> This public repository contains a privacy-safe version with stubs and mocks for demonstration.
+**Key technologies:** Python, FastAPI, Qwen3-0.6B, `llama.cpp`, Raspberry Pi 5, GitLab REST API, GitHub Actions.
 
----
+**Key idea:** keep prompts and repository metadata inside a local environment instead of sending them to a cloud LLM API. The public repository includes a safe demo mode that does not require model weights, a running Qwen server, or GitLab credentials.
+
+![Chat UI showing the GitLab assistant](docs/images/chat-ui.png)
 
 ## What This Project Demonstrates
 
-- **Local LLM inference on low-resource hardware**
-  - Qwen3-0.6B (quantized GGUF) running on Raspberry Pi 5 (8 GB) via `llama.cpp`.
-  - CPU-only inference, suitable for small offices or student projects without GPUs.
+- A browser chat UI served by FastAPI.
+- A local model client for a `llama.cpp` OpenAI-compatible chat endpoint.
+- A GitLab REST API integration that reads projects using `GITLAB_TOKEN` and `GITLAB_BASE_URL`.
+- A public demo mode using deterministic stub responses and mock GitLab data.
+- A simplified custom orchestration layer in `src/mcp/` that demonstrates MCP-style flow without claiming official MCP protocol support.
+- A minimal GitHub Actions workflow that compiles the Python source and imports core modules.
 
-- **MCP-style architecture**
-  - Clear separation between three layers:
-    - `src/ai_model/` – AI model interface  
-      (stubbed in the public repo; real setup talks to the local Qwen HTTP server).
-    - `src/integrations/` – integration with Git services  
-      (mocked in the public repo; real setup used the GitLab REST API).
-    - `src/mcp/` – orchestration layer that routes user requests to the model and tools.
+## Repository
 
-- **Git service integration**
-  - Public version includes a **mock Git service** that simulates listing repositories and creating issues.
-  - On Raspberry Pi, the backend calls the **GitLab REST API** to:
-    - list all accessible projects,
-    - fetch basic project metadata,
-    - answer questions like “show me all my GitLab projects”.
+```bash
+git clone https://github.com/wenhangong/mcp-qwen3-rpi-gitlab-assistant.git
+cd mcp-qwen3-rpi-gitlab-assistant
+```
 
-- **Browser-based internal chat UI**
-  - A small frontend served by FastAPI (`src/web/server.py`) provides a web chat console.
-  - User types questions like “How many GitLab projects do I have?” and the backend:
-    1. Calls GitLab (if needed),
-    2. Sends the result into Qwen3-0.6B,
-    3. Returns a friendly natural-language answer.
+## Current Implementation
 
-- **Privacy-first design**
-  - No model weights or GitLab tokens are committed to the repository.
-  - Real integrations use environment variables (`GITLAB_TOKEN`, optional `GITLAB_BASE_URL`) on the Raspberry Pi.
-  - All inference happens on-device; prompts and code never leave the local network.
-
----
-
-## Model Weights (not included in this repo)
-
-- This project was tested with the **Qwen3-0.6B** model.
-- The base weights were obtained from the official Qwen repository on Hugging Face  
-  (`Qwen/Qwen3-0.6B`), and then converted/downloaded as a quantized GGUF file  
-  (for example: `qwen3-0_6b-q4_k_m.gguf`) for use with `llama.cpp`.
-- The model has **not** been fine-tuned for this specific project, so its performance in
-  user-facing interactions is intentionally limited.
-- Model weights are **not** included in this repository and must be downloaded separately
-  from the official sources, following the Qwen license.
-
-This project also includes a minimal CI pipeline (GitHub Actions) to ensure the core demo
-runs successfully in a clean environment.
-
----
-
-## High-Level Architecture
+The web application path is:
 
 ```text
-[Browser UI]
-   ↓  HTTP (port 7000)
-FastAPI backend (src/web/server.py)
-   ↓
-MCP-style Orchestrator (src/mcp/mcp_client.py)
-   ↓                 ↓
-AI Model Interface   Git Service Integration
-(src/ai_model/)      (src/integrations/)
-
-[Private Raspberry Pi setup]
-   ↓
-llama.cpp HTTP server  →  Qwen3-0_6b-q4_k_m.gguf (local model file)
-GitLab REST API        →  using GITLAB_TOKEN / GITLAB_BASE_URL
+Browser UI
+  -> FastAPI backend (src/web/server.py)
+  -> simple request routing
+  -> optional GitLab REST summary fetcher
+  -> model backend
+       - demo mode: deterministic local stub
+       - local mode: llama.cpp HTTP server running Qwen3-0.6B
 ```
 
----
+The standalone orchestration demo is:
 
-## Screenshots (optional)
-
-You can insert screenshots here, for example:
-
-```markdown
-![Chat UI running on Raspberry Pi](docs/screenshot-chat-ui.png)
+```text
+src/mcp/main.py
+  -> MCPOrchestrator (src/mcp/mcp_client.py)
+  -> LightweightLLM stub
+  -> MockGitService
 ```
 
----
+The `src/mcp/` package is intentionally small. It shows the project structure and routing idea, while the production-like web flow currently lives in `src/web/server.py`.
 
-## 1. Running the Public Demo (no secrets, no real GitLab)
+## Screenshots
 
-This mode is designed for GitHub and classroom demos.
-It uses stubbed model logic and a mock Git service – **no tokens and no real repositories**.
+![Chat UI with GitLab project summary](docs/images/chat-ui.png)
+
+![Raspberry Pi runtime terminals](docs/images/raspberry-pi-runtime.png)
+
+## 1. Public Demo Mode
+
+Use this mode for GitHub review, portfolio demos, and local smoke testing. It does not call GitLab and does not require Qwen or `llama.cpp`.
 
 ### Requirements
 
-* Python 3.10+ (tested with 3.11)
-* `git`
+- Python 3.10+ (tested with Python 3.11 in CI)
+- `git`
 
-### Steps
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/wenhangong/MCP-QWEN3-RPi-GitLab-Assistant.git
-cd MCP-QWEN3-RPi-GitLab-Assistant
-
-# 2. Create and activate virtual environment
-python -m venv mcp_venv
-source mcp_venv/bin/activate    # Windows: mcp_venv\Scripts\activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Run the web backend (mock mode)
-python -m src.web.server
-```
-
-Then open in your browser:
-
-* [http://localhost:7000](http://localhost:7000) (if running on your laptop), or
-* <http://<raspberry-pi-ip>:7000> (if running on the Pi).
-
-In this mode:
-
-* Qwen3 and GitLab are **not required**.
-* Responses are generated from simple stubs so the UI and flow can be demonstrated safely.
-
----
-
-## 2. Full Private Setup on Raspberry Pi (Qwen3 + GitLab)
-
-This is the **real** internal setup used on my Raspberry Pi 5.
-
-### 2.1 Prepare the repository and Python environment
-
-On the Raspberry Pi:
+### Run
 
 ```bash
-git clone https://github.com/wenhangong/MCP-QWEN3-RPi-GitLab-Assistant.git
-cd MCP-QWEN3-RPi-GitLab-Assistant
+git clone https://github.com/wenhangong/mcp-qwen3-rpi-gitlab-assistant.git
+cd mcp-qwen3-rpi-gitlab-assistant
 
-python -m venv mcp_venv
+python3 -m venv mcp_venv
 source mcp_venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+
+ASSISTANT_MODE=demo python -m src.web.server
 ```
 
-### 2.2 Prepare Qwen3-0.6B with `llama.cpp`
+Then open:
 
-1. Download the original Qwen3-0.6B weights from the official Qwen distribution
-   (e.g. Hugging Face `Qwen/Qwen3-0.6B`), following their license.
+- <http://localhost:7000> when running locally
+- `http://<raspberry-pi-ip>:7000` when running on a Raspberry Pi
 
-2. Convert or download a quantized GGUF file, such as:
+In demo mode, GitLab-related questions are answered from mock project data and general questions use a deterministic stub response.
 
-   ```text
-   qwen3-0_6b-q4_k_m.gguf
-   ```
-
-3. Place the file under a local `models/` directory (this directory is **not** in git):
-
-   ```bash
-   mkdir -p ~/models
-   mv qwen3-0_6b-q4_k_m.gguf ~/models/
-   ```
-
-4. Build `llama.cpp` on the Pi and start the HTTP server, for example:
-
-   ```bash (sometimes it is better to use absolute path to start the HTTP server)
-   ~/llama.cpp/build/bin/llama-server -m ~/llama.cpp/models/qwen3-0_6b-q4_k_m.gguf -c 1024 --port 9000 --host 0.0.0.0
-   ```
-
-   Keep this process running in its own terminal window.
-
-### 2.3 Configure GitLab token (environment only)
-
-Create a small secrets file in your home directory **outside the repo**:
+You can also run the small CLI orchestration demo:
 
 ```bash
-nano ~/.secrets
+python -m src.mcp.main
 ```
 
-Example content (replace with your real values):
+## 2. Private Raspberry Pi Setup
+
+This mode uses a local Qwen3-0.6B model server and real GitLab API calls.
+
+### Prepare Python
 
 ```bash
-export GITLAB_TOKEN="glpat-xxxxxxxxxxxxxxxxxxxx"
-export GITLAB_BASE_URL="https://gitlab.com"   # or your self-hosted URL
+git clone https://github.com/wenhangong/mcp-qwen3-rpi-gitlab-assistant.git
+cd mcp-qwen3-rpi-gitlab-assistant
+
+python3 -m venv mcp_venv
+source mcp_venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-Then lock down the file and load it from your shell:
+### Prepare Qwen3-0.6B with llama.cpp
+
+1. Download Qwen3-0.6B from the official Qwen distribution, such as Hugging Face `Qwen/Qwen3-0.6B`, following the model license.
+2. Convert or download a quantized GGUF file, for example `qwen3-0_6b-q4_k_m.gguf`.
+3. Store model files outside git, for example under `~/models/`.
+4. Build `llama.cpp` on the Raspberry Pi and start the HTTP server:
+
+```bash
+~/llama.cpp/build/bin/llama-server \
+  -m ~/models/qwen3-0_6b-q4_k_m.gguf \
+  -c 1024 \
+  --port 9000 \
+  --host 0.0.0.0
+```
+
+Keep that process running in a separate terminal.
+
+### Configure GitLab and Runtime Environment
+
+Store secrets outside the repository, for example in `~/.secrets`:
+
+```bash
+export ASSISTANT_MODE="local"
+export GITLAB_TOKEN="<paste your GitLab personal access token>"
+export GITLAB_BASE_URL="https://gitlab.com"
+export QWEN_API_URL="http://127.0.0.1:9000/v1/chat/completions"
+export QWEN_MODEL_NAME="qwen3-0.6b"
+```
+
+Then protect and load the file:
 
 ```bash
 chmod 600 ~/.secrets
-
-# Add this line once to the end of ~/.bashrc
 echo 'source ~/.secrets' >> ~/.bashrc
-
-# Reload current shell session
-source ~/.bashrc
-```
-**Note that once the token is modified based on the change of the token's scope, these command must be executed"
 source ~/.secrets
-pkill -f "src.web.server" 
-python -m src.web.server
+```
 
-
-**Important security note**
-
-* `~/.secrets` and `~/.bashrc` are in your home directory, not in the project folder,
-  so they are **not** tracked by git.
-* Never write `GITLAB_TOKEN` or other secrets into the repository,
-  and never commit any `.env`, `config.yaml`, or log files that contain tokens.
-
-### 2.4 Start the MCP-style backend
-
-Back in the project directory on the Pi:
+If you change the token or its scopes later, reload the environment and restart the backend:
 
 ```bash
-cd ~/MCP-QWEN3-RPi-GitLab-Assistant
-source mcp_venv/bin/activate
+source ~/.secrets
+pkill -f "src.web.server"
 python -m src.web.server
 ```
 
-By default this runs FastAPI on **port 7000**, listening on `0.0.0.0`.
+### Start the Web Backend
 
-### 2.5 Open the chat UI
+```bash
+cd ~/mcp-qwen3-rpi-gitlab-assistant
+source mcp_venv/bin/activate
+source ~/.secrets
+python -m src.web.server
+```
 
-From a browser on the Raspberry Pi, or from another machine in the same network:
+By default, FastAPI listens on `0.0.0.0:7000`.
 
+Open:
 
 ```text
 http://<raspberry-pi-ip>:7000
 ```
 
-Now you can ask questions like:
+Example questions:
 
-* “How many GitLab projects do I have?”
-* “Show me all project names.”
-* “Tell me who is in charge of the projects.”
-![alt text](image.png) 
+- "How many GitLab projects do I have?"
+- "Show me all project names."
+- "Which repositories were created most recently?"
 
-The flow is:
+When a question looks GitLab-related, the backend fetches project metadata through the GitLab REST API, injects a factual summary into the prompt, and sends that prompt to the local Qwen endpoint.
 
-1. Browser → sends your question to `/chat` on the FastAPI backend.
-2. Backend → decides whether this is a GitLab question.
-3. If yes, it calls GitLab REST API using `GITLAB_TOKEN`, then passes the result into Qwen.
-4. Qwen3-0.6B generates a short answer, which is sent back to the browser.
+## Model Weights
 
----
+Model weights are not included in this repository.
 
-## 3. What Needs to Be Running?
+The project was tested with Qwen3-0.6B as a quantized GGUF model served by `llama.cpp`. The model was used for local inference only and was not fine-tuned for this project.
 
-When you interact with GitLab through the model, you **only** need:
+## Security and Privacy
 
-1. **Qwen HTTP server** (via `llama.cpp`)
+- No GitLab tokens, model weights, or private GitLab data are committed.
+- Secrets are read from environment variables.
+- `GITLAB_TOKEN` is required only for real GitLab mode.
+- `GITLAB_BASE_URL` defaults to `https://gitlab.com` and can point to a self-hosted GitLab instance.
+- `.gitignore` excludes common local env files, virtual environments, local model directories, and model weight file extensions.
+- Tokens are never sent to the browser. Browser requests go to the local FastAPI backend.
 
-   * Listens on `http://127.0.0.1:9000/v1/chat/completions`
-   * Uses the local `qwen3-0_6b-q4_k_m.gguf` file.
+## Validation
 
-2. **FastAPI backend** (`python -m src.web.server`)
+The repository includes a minimal CI workflow in `.github/workflows/ci.yml`:
 
-   * Listens on `http://0.0.0.0:7000`
-   * Serves the HTML/JS frontend and handles all Qwen + GitLab integration.
-![alt text](image-1.png)
-You do **not** need to run any extra Python scripts like experimental
-`qwen_gitlab_demo.py` during the demo; those are kept locally and are ignored by git.
+```bash
+python -m compileall -q src
+python -c "import importlib; [importlib.import_module(m) for m in ['src.web.server', 'src.ai_model.qwen_client', 'src.integrations.gitlab_client', 'src.mcp.mcp_client', 'src.mcp.main']]"
+```
 
-GitLab itself runs as usual (cloud GitLab or self-hosted).
-All requests go from the Raspberry Pi backend → GitLab API over HTTPS.
+For a local public demo smoke test:
 
----
+```bash
+ASSISTANT_MODE=demo python -m src.web.server
+```
 
-## 4. Security & Privacy Notes
+Then open <http://localhost:7000> and ask a GitLab-related question. The response should clearly say it is using mock GitLab data.
 
-* GitLab access uses a **personal access token** stored in shell environment variables.
-* No tokens, secrets, or model weights are included in this public repository.
-* The recommended flow is:
+## Tooling and AI Assistance
 
-  * keep secrets in `~/.secrets`,
-  * `source ~/.secrets` from `~/.bashrc`,
-  * never commit those files.
-* All AI inference happens on the Raspberry Pi; prompts and repository metadata
-  stay inside your network.
-
----
-
-## 5. Tooling & AI Assistance
-
-* Backend: Python, FastAPI, `requests`
-* Frontend: Plain HTML + CSS + vanilla JS (served as static files)
-* Local model runtime: `llama.cpp` on Raspberry Pi
-* Git service: GitLab REST API
-* CI: GitHub Actions (basic “can this run in a clean environment” check)
-
-Part of the documentation, UI text, and scaffolding code was written with the help of AI
-tools (for example ChatGPT).
-All code, configuration, and deployment steps were reviewed and tested by me on my own
-Raspberry Pi 5.
+Parts of the documentation, UI text, and scaffolding were written with AI assistance. The repository keeps the implementation and setup notes explicit so reviewers can verify what is running in demo mode and what is required for private local mode.

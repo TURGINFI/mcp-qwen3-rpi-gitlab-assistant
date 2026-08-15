@@ -11,10 +11,11 @@ class MCPOrchestrator:
     """
     def run(self, prompt: str, model_generate, git_service) -> MCPResponse:
         llm_result = model_generate(prompt)
+        issue_body = getattr(llm_result, "text", str(llm_result))
         repos = git_service.list_repos()
         issue_url = git_service.create_issue(
             repo_name=repos[0].name,
             title="AI-generated summary",
-            body=llm_result.text
+            body=issue_body
         )
         return MCPResponse(message=f"Created issue (mock): {issue_url}")

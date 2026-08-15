@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, Optional
 
 import os
 import requests
@@ -20,6 +21,22 @@ def get_gitlab_base_url() -> str:
     return base.rstrip("/")
 
 
+def get_gitlab_token() -> Optional[str]:
+    """Get the GitLab personal access token from the environment."""
+    return os.environ.get("GITLAB_TOKEN")
+
+
+def require_gitlab_token() -> str:
+    """Return GITLAB_TOKEN or raise a clear configuration error."""
+    token = get_gitlab_token()
+    if not token:
+        raise RuntimeError(
+            "GITLAB_TOKEN is not set. Export it from a local secrets file before "
+            "using the real GitLab integration."
+        )
+    return token
+
+
 def list_gitlab_projects_via_rest() -> List[str]:
     """
     Very simple function: use GitLab REST API to list user projects.
@@ -30,12 +47,7 @@ def list_gitlab_projects_via_rest() -> List[str]:
     Return list of project names like:
       ["group1 / repoA", "group2 / repoB", ...]
     """
-    token = os.environ.get("GITLAB_TOKEN")
-    if not token:
-        raise RuntimeError(
-            "GITLAB_TOKEN is not set, please set in ~/.secrets and source ~/.bashrc first."
-        )
-
+    token = require_gitlab_token()
     base_url = get_gitlab_base_url()
     headers = {"PRIVATE-TOKEN": token}
     # membership=true => only projects you are member
@@ -49,3 +61,24 @@ def list_gitlab_projects_via_rest() -> List[str]:
         p.get("name_with_namespace") or p.get("name", "") for p in data
     ]
     return names
+
+
+@dataclass
+class MockRepo:
+    """Small repository object used by the public CLI demo."""
+    name: str
+
+
+class MockGitService:
+    """Privacy-safe Git service used by src.mcp.main."""
+
+    def list_repos(self) -> List[MockRepo]:
+        return [
+            MockRepo(name="portfolio-site"),
+            MockRepo(name="rpi-lab-notes"),
+            MockRepo(name="mcp-qwen3-rpi-gitlab-assistant"),
+        ]
+
+    def create_issue(self, repo_name: str, title: str, body: str) -> str:
+        issue_slug = title.lower().replace(" ", "-")
+        return f"mock://gitlab/{repo_name}/issues/{issue_slug}"

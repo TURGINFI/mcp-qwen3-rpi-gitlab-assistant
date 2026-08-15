@@ -137,6 +137,7 @@ celerybeat.pid
 # Environments
 .env
 .envrc
+.secrets
 .venv
 env/
 venv/
@@ -211,17 +212,18 @@ __marimo__/
 qwen_gitlab_demo.py
 gitlab_mcp_server.py
 
+# Local configuration and secrets
+config/config.yaml
+config/*.local.yaml
+
 # Local LLM runtimes and models (Raspberry Pi only, do not commit)
 llama.cpp/
 models/
+*.gguf
+*.ggml
+*.safetensors
+*.pt
+*.pth
 
 # This folder contains the virtual environment. It is recommended to create one.
 mcp_venv/
-__pycache__/
-*.pyc
-
-models/
-*.gguf
-
-.env
-*.log

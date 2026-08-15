@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Internal Qwen + GitLab Assistant</title>
+  <title>Local Qwen3 GitLab Assistant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/static/style.css" />
   <script src="/static/script.js" defer></script>
@@ -10,10 +10,10 @@
 <body>
   <div class="app-shell">
     <header>
-      <h1>Internal Qwen + GitLab Assistant (Demo)</h1>
+      <h1>Local Qwen3 GitLab Assistant</h1>
       <p>
-        Running on Raspberry Pi with local Qwen3-0.6B and GitLab REST API.
-        This is a small internal helper, not a big cloud chatbot.
+        Runs in public demo mode with stubs, or on Raspberry Pi with local
+        Qwen3-0.6B and GitLab REST API.
       </p>
       <div class="badges">
         <span class="badge">
@@ -30,7 +30,7 @@
         <div class="chat-header">
           <div class="chat-header-left">Chat console</div>
           <div class="chat-header-right" id="status-text">
-            Connected to backend (expected)
+            Connected to backend
           </div>
         </div>
 
@@ -42,7 +42,7 @@
               id="user-input"
               type="text"
               autocomplete="off"
-              placeholder="Ask about your GitLab projects, or just chat with Qwen..."
+              placeholder="Ask about GitLab projects or the local assistant..."
             />
             <button id="send-btn" type="submit">
               Send
@@ -50,15 +50,15 @@
             </button>
           </form>
           <div class="helper-text">
-            Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for line break.  
-            All GitLab requests go through your Raspberry Pi backend (no tokens in browser).
+            Press <strong>Enter</strong> to send.
+            GitLab requests go through the backend; tokens are never stored in the browser.
           </div>
         </div>
       </section>
     </main>
 
     <footer>
-      Demo project – local Qwen3-0.6B + GitLab integration (for study only).
+      MCP-style local AI assistant prototype with GitLab integration.
     </footer>
   </div>
 

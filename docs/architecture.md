@@ -1,18 +1,48 @@
-# **Architecture Overview**
+# Architecture Overview
 
-This demo is organized into **four** parts:
+This repository uses an MCP-style architecture: model access, GitLab integration, and orchestration are separated into small modules. It is a simplified custom design, not a full implementation of the official Model Context Protocol.
 
-## 1. AI model module 
-- It provides a clean intergace for AI inference.
-- In the public version, it is stubbed to avoid shipping any model weights or device-specific setup.
+## Web Application Flow
 
-## 2. MCP module
-- Represents the orchestration layer.
-- In a real setup, this would manage tool calls and the flow between user prompts, model inference and integration.
+```text
+Browser UI
+  -> FastAPI backend (src/web/server.py)
+  -> request routing
+  -> GitLab summary fetcher, when needed
+  -> model backend
+```
 
-## 3. Integrations
-- External system integrations are mocked.
-- This keeps the repository privacy-safe and avoids exposing any real Git service configuration.
+The web backend has two runtime modes:
 
-## 4. Entry point 
-- It demonstrates the workflow end-to-end using the modules above.
+- `ASSISTANT_MODE=demo`: uses deterministic stub responses and mock GitLab data.
+- `ASSISTANT_MODE=local`: calls the local `llama.cpp` Qwen endpoint and, for GitLab-related questions, the GitLab REST API.
+
+## Modules
+
+### AI model module
+
+`src/ai_model/` contains:
+
+- `qwen_client.py`: calls a local OpenAI-compatible `llama.cpp` chat endpoint.
+- `model_stub.py`: provides a deterministic stub for public demos and smoke tests.
+
+### Integrations
+
+`src/integrations/gitlab_client.py` contains:
+
+- environment helpers for `GITLAB_TOKEN` and `GITLAB_BASE_URL`
+- a small GitLab REST project-listing helper
+- `MockGitService` for the standalone orchestration demo
+
+### MCP-style module
+
+`src/mcp/` contains a small orchestration demo:
+
+- `mcp_client.py`: routes a prompt through a model function and Git service object.
+- `main.py`: runs the demo with `LightweightLLM` and `MockGitService`.
+
+This module demonstrates the architectural idea but does not implement the official MCP protocol.
+
+### Web entry point
+
+`src/web/server.py` serves the static frontend and implements the practical chat workflow used by the browser UI.

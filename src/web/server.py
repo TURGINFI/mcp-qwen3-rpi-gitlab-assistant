@@ -10,9 +10,11 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from src.ai_model.model_stub import LightweightLLM
 from src.ai_model.qwen_client import call_qwen_chat
+from src.integrations.gitlab_client import get_gitlab_base_url, get_gitlab_token
 
 # ----------------- FastAPI app & static frontend -----------------
 
@@ -23,26 +25,85 @@ FRONTEND_DIR = BASE_DIR / "static"                  # = src/web/static
 
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
-# ----------------- Helper: GitLab API Fetcher -----------------
-# Added directly here to solve the "hallucination" issue immediately.
-# Make sure to set your actual GitLab URL and Token below!
+# ----------------- Runtime mode and demo data -----------------
 
-GITLAB_URL = os.getenv("GITLAB_URL", "https://gitlab.com")
-GITLAB_TOKEN = os.getenv("GITLAB_TOKEN", "YOUR_GITLAB_TOKEN_HERE") 
+DEMO_MODEL = LightweightLLM()
+DEMO_GITLAB_SUMMARY = "\n".join(
+    [
+        "Total projects: 3",
+        "Oldest project: 'portfolio-site' created on 2026-01-10T09:00:00Z",
+        "Newest project: 'mcp-qwen3-rpi-gitlab-assistant' created on 2026-03-18T15:30:00Z",
+        "",
+        "Detailed Project List:",
+        "- Project 'portfolio-site': Contains 5 root files/folders. Files: README.md, src, public, package.json, tests.",
+        "- Project 'rpi-lab-notes': Contains 4 root files/folders. Files: README.md, docs, scripts, requirements.txt.",
+        "- Project 'mcp-qwen3-rpi-gitlab-assistant': Contains 6 root files/folders. Files: README.md, src, docs, config, requirements.txt, .github.",
+    ]
+)
+
+
+def is_demo_mode() -> bool:
+    """Return True when the public demo should avoid local Qwen and GitLab."""
+    return os.getenv("ASSISTANT_MODE", "local").strip().lower() in {
+        "demo",
+        "mock",
+        "stub",
+    }
+
+
+def generate_demo_reply(messages: List[dict[str, str]]) -> str:
+    """Generate deterministic responses for public demos and CI-style runs."""
+    user_msg = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_msg = msg.get("content", "")
+            break
+
+    text_lower = user_msg.lower()
+    if "gitlab" in text_lower or "project" in text_lower or "projects" in text_lower:
+        return (
+            "Demo mode is using mock GitLab data, not a real GitLab token.\n\n"
+            f"{DEMO_GITLAB_SUMMARY}"
+        )
+
+    return DEMO_MODEL.generate(user_msg)
+
+
+def call_assistant_model(messages: List[dict[str, str]]) -> str:
+    """Call the configured model backend."""
+    if is_demo_mode():
+        return generate_demo_reply(messages)
+
+    return call_qwen_chat(messages)
+
+
+# ----------------- Helper: GitLab API Fetcher -----------------
 
 def get_enhanced_gitlab_summary() -> str:
     """
     Fetches detailed project info: counts, oldest, newest, creators, and file trees.
     Returns a summarized string formatted for the 0.6B LLM so it doesn't have to guess.
     """
-    if GITLAB_TOKEN == "YOUR_GITLAB_TOKEN_HERE":
-        return "System Warning: GITLAB_TOKEN is not configured in the backend."
+    if is_demo_mode():
+        return DEMO_GITLAB_SUMMARY
 
-    headers = {"PRIVATE-TOKEN": GITLAB_TOKEN}
+    gitlab_token = get_gitlab_token()
+    if not gitlab_token:
+        return (
+            "GitLab integration is not configured. Set GITLAB_TOKEN and, if needed, "
+            "GITLAB_BASE_URL before asking GitLab questions."
+        )
+
+    gitlab_base_url = get_gitlab_base_url()
+    headers = {"PRIVATE-TOKEN": gitlab_token}
     
     try:
         # 1. Fetch projects (membership=true ensures we only get user's relevant projects)
-        resp = requests.get(f"{GITLAB_URL}/api/v4/projects?membership=true&simple=false", headers=headers, timeout=10)
+        resp = requests.get(
+            f"{gitlab_base_url}/api/v4/projects?membership=true&simple=false&per_page=100",
+            headers=headers,
+            timeout=10,
+        )
         resp.raise_for_status()
         projects = resp.json()
         
@@ -71,7 +132,11 @@ def get_enhanced_gitlab_summary() -> str:
             creator = p.get('namespace', {}).get('name', 'Unknown')
             
             # Fetch file tree for each project
-            tree_resp = requests.get(f"{GITLAB_URL}/api/v4/projects/{project_id}/repository/tree", headers=headers, timeout=5)
+            tree_resp = requests.get(
+                f"{gitlab_base_url}/api/v4/projects/{project_id}/repository/tree",
+                headers=headers,
+                timeout=5,
+            )
             
             if tree_resp.status_code == 200:
                 files_data = tree_resp.json()
@@ -108,7 +173,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     # The frontend now sends the previous messages here
-    history: List[ChatMessage] = [] 
+    history: List[ChatMessage] = Field(default_factory=list)
 
 class ChatResponse(BaseModel):
     reply: str
@@ -150,6 +215,15 @@ def chat(req: ChatRequest) -> ChatResponse:
     messages_for_qwen = []
 
     if ask_gitlab:
+        if not is_demo_mode() and not get_gitlab_token():
+            return ChatResponse(
+                reply=(
+                    "GitLab integration is not configured. Set GITLAB_TOKEN and, "
+                    "if needed, GITLAB_BASE_URL before asking GitLab questions."
+                ),
+                used_gitlab=False,
+            )
+
         # ---- branch 1: call enhanced GitLab REST API ----
         gitlab_data_str = get_enhanced_gitlab_summary()
 
@@ -162,7 +236,7 @@ def chat(req: ChatRequest) -> ChatResponse:
         )
         
         messages_for_qwen.append({"role": "system", "content": system_prompt})
-        used_gitlab = True
+        used_gitlab = not is_demo_mode()
 
     else:
         
@@ -182,7 +256,7 @@ def chat(req: ChatRequest) -> ChatResponse:
 
     # Send the whole package to the model
     try:
-        qwen_reply = call_qwen_chat(messages_for_qwen)
+        qwen_reply = call_assistant_model(messages_for_qwen)
         reply_text = qwen_reply or "Model processed the request but returned an empty response."
     except Exception as e:
         reply_text = f"Error communicating with local Qwen model: {str(e)}"

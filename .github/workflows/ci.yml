@@ -39,6 +39,7 @@ jobs:
               "src.ai_model.qwen_client",
               "src.integrations.gitlab_client",
               "src.mcp.mcp_client",
+              "src.mcp.main",
           ]
           for m in modules:
               importlib.import_module(m)

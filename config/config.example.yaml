@@ -1,9 +1,13 @@
-git_service:
-  base_url: "https://example.git.service"
-  api_token: "YOUR_TOKEN_HERE"
+# Reference configuration only.
+# The current runtime reads secrets and endpoints from environment variables.
 
+runtime:
+  mode_env: "ASSISTANT_MODE"        # demo or local
 
-
+gitlab:
+  base_url_env: "GITLAB_BASE_URL"   # defaults to https://gitlab.com
+  token_env: "GITLAB_TOKEN"         # required only for ASSISTANT_MODE=local
 
 model:
-  runtime: "stub"  # in private setup: "raspberry-pi"
+  api_url_env: "QWEN_API_URL"       # defaults to http://127.0.0.1:9000/v1/chat/completions
+  model_name_env: "QWEN_MODEL_NAME" # defaults to qwen3-0.6b

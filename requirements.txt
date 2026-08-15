@@ -1,9 +1,8 @@
 # Core dependencies for the demo
 
-# HTTP client for Git service / MCP demo calls
+# HTTP client for GitLab/API calls
 requests>=2.31.0
-mcp>=0.1.0
 
-# web backend
+# Web backend
 fastapi>=0.115.0
 uvicorn>=0.29.0

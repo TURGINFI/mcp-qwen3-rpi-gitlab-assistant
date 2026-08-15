@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import os
 from typing import List, Dict, Any
 
 import requests
 
 # Local Qwen model server, running on Raspberry Pi with llama.cpp
-QWEN_API_URL = "http://127.0.0.1:9000/v1/chat/completions"
+QWEN_API_URL = os.getenv(
+    "QWEN_API_URL",
+    "http://127.0.0.1:9000/v1/chat/completions",
+)
 # Model name here is just a label, llama.cpp usually not very strict
-QWEN_MODEL_NAME = "qwen3-0.6b"
+QWEN_MODEL_NAME = os.getenv("QWEN_MODEL_NAME", "qwen3-0.6b")
 
 
 def call_qwen_chat(
